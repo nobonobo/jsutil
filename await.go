@@ -15,19 +15,19 @@ func (w wrappedError) JSValue() js.Value {
 // Await equivalent for js await statement.
 func Await(promise js.Value) (res js.Value, err error) {
 	ch := make(chan bool)
-	promise.Call("then",
-		Callback1(func(arg js.Value) interface{} {
-			res = arg
-			close(ch)
-			return nil
-		}),
-	).Call("catch",
-		Callback1(func(arg js.Value) interface{} {
-			err = wrappedError(arg)
-			close(ch)
-			return nil
-		}),
-	)
+	then := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		res = args[0]
+		close(ch)
+		return js.Undefined()
+	})
+	defer then.Release()
+	catch := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		err = wrappedError(args[0])
+		close(ch)
+		return js.Undefined()
+	})
+	defer catch.Release()
+	promise.Call("then", then).Call("catch", catch)
 	<-ch
 	return
 }

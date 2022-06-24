@@ -1,4 +1,4 @@
-package jsuti
+package jsutil
 
 import "syscall/js"
 
